@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -ex
 
@@ -8,17 +8,6 @@ cleanUp () {
 }
 
 trap cleanUp EXIT
-
-# Define reasonable set of browsers in case we are running manually from commandline
-if [[ -z "$BROWSERS" ]]
-then
-  BROWSERS="Chrome"
-fi
-
-if [[ -z "$BROWSERS_E2E" ]]
-then
-  BROWSERS_E2E="Chrome"
-fi
 
 ROOT_DIR=`dirname $0`/../..
 
@@ -32,15 +21,15 @@ npm install
 npm run update-webdriver
 
 # Start up the web server
-node_modules/.bin/http-server -p 8000 &
+node_modules/.bin/http-server ./app -a localhost -p 8000 -c-1 --silent &
 WEBSERVER_PID=$!
 
 # Run the unit and e2e tests
-for i in {0..12}
+# (Steps 0 and 1 do not have tests)
+for i in $(seq 2 14)
 do
   git checkout -f step-$i
 
-  node_modules/karma/bin/karma start test/karma.conf.js --single-run --browsers=$BROWSERS
-  node_modules/.bin/protractor test/protractor-conf.js --browser=$BROWSERS_E2E
-
+  node_modules/.bin/karma start karma.conf.js --single-run
+  node_modules/.bin/protractor e2e-tests/protractor.conf.js --directConnect
 done
